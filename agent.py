@@ -121,16 +121,13 @@ class SAC(nn.Module):
             # Compute Q targets for current states (y_i)
             Q_targets = rewards + (gamma * (1 - dones) * Q_target_next.sum(dim=1).unsqueeze(-1)) 
 
-
         # Compute critic loss
         q1 = self.critic1(states).gather(1, actions.long())
         q2 = self.critic2(states).gather(1, actions.long())
         
-        
         critic1_loss = 0.5 * F.mse_loss(q1, Q_targets)
         critic2_loss = 0.5 * F.mse_loss(q2, Q_targets)
 
-        
         # Update critics
         # critic 1
         self.critic1_optimizer.zero_grad()
