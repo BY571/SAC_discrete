@@ -68,8 +68,8 @@ class SAC(nn.Module):
         state = torch.from_numpy(state).float().to(self.device)
         
         with torch.no_grad():
-            action = self.actor_local.get_det_action(state)
-        return action.numpy()
+            action, action_prob = self.actor_local.get_det_action(state)
+        return action.numpy(), action_prob.numpy()
 
     def calc_policy_loss(self, states, alpha):
         _, action_probs, log_pis = self.actor_local.evaluate(states)
@@ -119,12 +119,12 @@ class SAC(nn.Module):
             Q_target_next = action_probs * (torch.min(Q_target1_next, Q_target2_next) - self.alpha.to(self.device) * log_pis)
 
             # Compute Q targets for current states (y_i)
-            Q_targets = rewards + (gamma * (1 - dones) * Q_target_next.sum(dim=1).unsqueeze(-1)) 
+            Q_targets = rewards + (gamma * (1 - dones) * Q_target_next.sum(1).unsqueeze(1)) 
 
         # Compute critic loss
-        q1 = self.critic1(states).gather(1, actions.long())
-        q2 = self.critic2(states).gather(1, actions.long())
-        
+        q1 = (self.critic1(states) * actions).sum(1).unsqueeze(1) #.gather(1, actions.long())
+        q2 = (self.critic2(states) * actions).sum(1).unsqueeze(1) #.gather(1, actions.long())
+        assert q1.shape == Q_targets.shape
         critic1_loss = 0.5 * F.mse_loss(q1, Q_targets)
         critic2_loss = 0.5 * F.mse_loss(q2, Q_targets)
 

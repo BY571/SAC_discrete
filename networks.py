@@ -67,7 +67,7 @@ class Actor(nn.Module):
         action_probs = self.forward(state)
         dist = Categorical(action_probs)
         action = dist.sample().to(state.device)
-        return action.detach().cpu()
+        return action.detach().cpu(), action_probs.detach().cpu()
 
 
 class Critic(nn.Module):

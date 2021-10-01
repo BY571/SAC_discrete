@@ -1,5 +1,6 @@
 import torch
-
+import numpy as np
+from torch.distributions import Categorical
 def save(args, save_name, model, wandb, ep=None):
     import os
     save_dir = './trained_models/' 
@@ -15,9 +16,13 @@ def save(args, save_name, model, wandb, ep=None):
 def collect_random(env, dataset, num_samples=200):
     state = env.reset()
     for _ in range(num_samples):
-        action = env.action_space.sample()
+        
+        a = np.random.uniform(low=0.0, high=1.0, size=env.action_space.n) 
+        action_prob = (a - np.min(a))/np.ptp(a)
+        dist = Categorical(torch.from_numpy(action_prob).float())
+        action = dist.sample().numpy()
         next_state, reward, done, _ = env.step(action)
-        dataset.add(state, action, reward, next_state, done)
+        dataset.add(state, action_prob, reward, next_state, done)
         state = next_state
         if done:
             state = env.reset()
